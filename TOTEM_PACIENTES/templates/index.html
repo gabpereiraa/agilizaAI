@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totem de Pacientes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin: 15px 0;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+    }
+    
+    .checkbox-group label {
+        margin-bottom: 0;
+        font-weight: normal;
+    }
+    
+    input[type="email"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    
+    select.form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+        background-color: white;
+        height: auto;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <form id="form-paciente" class="card">
+            <h2>Totem de Pacientes</h2>
+            
+            <div class="flash-messages" id="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            <div class="form-group">
+                <label for="cpf">CPF (somente números):</label>
+                <div class="input-group">
+                    <input type="text" id="cpf" name="cpf" maxlength="11" required
+                           pattern="\d{11}" title="Digite apenas números (11 dígitos)">
+                    <button type="button" id="btn-buscar" class="btn-buscar">Buscar</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="nome">Nome Completo (obrigatório):</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="telefone">Telefone (obrigatório):</label>
+                <input type="tel" id="telefone" name="telefone" required
+                       pattern="\d{10,11}" title="Digite apenas números (10 ou 11 dígitos)">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="cep">CEP (somente números):</label>
+                <input type="text" id="cep" name="cep" maxlength="8"
+                       pattern="\d{8}" title="Digite apenas números (8 dígitos)">
+            </div>
+            
+            <div class="form-group">
+                <label for="numero">N°:</label>
+                <input type="text" id="numero" name="numero">
+            </div>
+            
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="preferencial" name="preferencial">
+                <label for="preferencial">Preferencial (Gestante/Idoso/Deficiente)</label>
+            </div>
+            
+            <div class="form-group">
+                <label for="prioridade">Prioridade:</label>
+                <select id="prioridade" name="prioridade" class="form-control">
+                    <option value="normal">Normal</option>
+                    <option value="urgente">Urgente</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn-primary">Enviar</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('form-paciente');
+            const btnBuscar = document.getElementById('btn-buscar');
+            const cpfInput = document.getElementById('cpf');
+            
+            cpfInput.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+            });
+            
+            document.getElementById('telefone').addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+            });
+            
+            document.getElementById('cep').addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+            });
+            
+            btnBuscar.addEventListener('click', function() {
+                const cpf = cpfInput.value.trim();
+                if (cpf.length !== 11) {
+                    alert('CPF deve ter 11 dígitos');
+                    return;
+                }
+                
+                fetch('/buscar_paciente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `cpf=${cpf}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.paciente) {
+                            document.getElementById('nome').value = data.paciente.nome || '';
+                            document.getElementById('telefone').value = data.paciente.telefone || '';
+                            document.getElementById('email').value = data.paciente.email || '';
+                            document.getElementById('cep').value = data.paciente.cep || '';
+                            document.getElementById('numero').value = data.paciente.numero || '';
+                        } else {
+                            alert('Paciente não encontrado. Preencha os dados para novo cadastro.');
+                        }
+                    } else {
+                        alert(data.message || 'Erro ao buscar paciente');
+                    }
+                });
+            });
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                
+                const cpf = formData.get('cpf').replace(/\D/g, '');
+                if (cpf.length !== 11) {
+                    alert('CPF deve ter 11 dígitos');
+                    return;
+                }
+                
+                
+                const telefone = formData.get('telefone').replace(/\D/g, '');
+                if (!telefone) {
+                    alert('Telefone é obrigatório');
+                    return;
+                }
+                
+                fetch('/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na resposta do servidor');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        form.reset();
+                    } else {
+                        alert('Erro: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro na comunicação com o servidor');
+                });
+            }); 
+        });
+    </script>
+</body>
+</html>

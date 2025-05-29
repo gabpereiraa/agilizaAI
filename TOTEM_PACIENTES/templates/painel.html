@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Chamada</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .painel-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .painel-header {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .painel-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        
+        .painel-section h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .display-chamada {
+            font-size: 2.5em;
+            text-align: center;
+            padding: 30px;
+            margin: 20px 0;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .fila-grupo {
+            margin-bottom: 15px;
+        }
+        
+        .paciente-item {
+            display: inline-block;
+            margin-right: 15px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .urgente {
+            color: var(--danger);
+            font-weight: bold;
+        }
+        
+        .preferencial {
+            color: var(--info);
+        }
+        
+        .ultimos-atendidos {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .ultimo-item {
+            flex: 1;
+            margin: 0 5px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes piscar {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .piscando {
+            animation: piscar 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="painel-container">
+        <div class="painel-header">
+            <h1>Painel de Chamada</h1>
+        </div>
+        
+        <div class="display-chamada" id="display-chamada">
+            Aguardando pacientes...
+        </div>
+        
+        <div class="painel-section">
+            <h2>Fila de Espera</h2>
+            
+            <div class="fila-grupo">
+                <h3>Emergências:</h3>
+                <div id="fila-urgentes"></div>
+            </div>
+            
+            <div class="fila-grupo">
+                <h3>Preferenciais (Gestantes/Idosos/Deficientes):</h3>
+                <div id="fila-preferenciais"></div>
+            </div>
+            
+            <div class="fila-grupo">
+                <h3>Pacientes Comuns:</h3>
+                <div id="fila-normais"></div>
+            </div>
+        </div>
+        
+        <div class="painel-section">
+            <h2>Últimos Chamados</h2>
+            <div class="ultimos-atendidos" id="ultimos-atendidos"></div>
+        </div>
+    </div>
+
+    <script>
+        const display = document.getElementById('display-chamada');
+        
+        function atualizarPainel() {
+            fetch('/api/fila')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.em_atendimento) {
+                        const tipo = data.em_atendimento.prioridade === 'urgente' ? 
+                            '<span class="urgente">(Emergência)</span>' : 
+                            data.em_atendimento.preferencial ? 
+                            '<span class="preferencial">(Preferencial)</span>' : '';
+                        
+                        display.innerHTML = `
+                            Chamando: ${data.em_atendimento.nome} - Senha ${data.em_atendimento.senha} - ${tipo}
+                            
+                        `;
+                        display.classList.add('piscando');
+                    } else {
+                        display.textContent = 'Aguardando pacientes...';
+                        display.classList.remove('piscando');
+                    }
+                    
+                    const filaUrgentes = document.getElementById('fila-urgentes');
+                    filaUrgentes.innerHTML = data.urgentes.map((p, i) => `
+                        <div class="paciente-item urgente">
+                             ${p.nome} - Senha ${p.senha}
+                        </div>
+                    `).join('') || '<div class="empty">Nenhuma emergência na fila</div>';
+                    
+                    const filaPreferenciais = document.getElementById('fila-preferenciais');
+                    filaPreferenciais.innerHTML = data.preferenciais.map((p, i) => `
+                        <div class="paciente-item preferencial">
+                             ${p.nome} - Senha ${p.senha}
+                        </div>
+                    `).join('') || '<div class="empty">Nenhum preferencial na fila</div>';
+                    
+                    const filaNormais = document.getElementById('fila-normais');
+                    filaNormais.innerHTML = data.normais.map((p, i) => `
+                        <div class="paciente-item">
+                             ${p.nome} - Senha ${p.senha}
+                        </div>
+                    `).join('') || '<div class="empty">Nenhum paciente comum na fila</div>';
+                    
+                    const ultimosAtendidos = document.getElementById('ultimos-atendidos');
+                    ultimosAtendidos.innerHTML = data.ultimos_atendidos.map(p => `
+                        <div class="ultimo-item">
+                            ${p.nome} - Senha ${p.senha}
+                            ${p.prioridade === 'urgente' ? '<span class="urgente">(Emergência)</span>' : 
+                              p.preferencial ? '<span class="preferencial">(Preferencial)</span>' : ''}
+                        </div>
+                    `).join('') || '<div class="empty">Nenhum atendimento recente</div>';
+                });
+        }
+        
+        atualizarPainel();
+        setInterval(atualizarPainel, 5000);
+    </script>
+</body>
+</html>
