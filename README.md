@@ -112,13 +112,13 @@ A imagem exibe a interface principal de cadastro do paciente no totem, onde o us
 
 ### - Exemplo de funcionalidade
 Interface de visualização da fila de pacientes em tempo real, organizada por prioridade e ordem de chegada.  
-[🔗 Imagem](https://imgur.com/e6kkavN)
+![Interface de Fila de Pacientes](https://i.imgur.com/e6kkavN.png)
 
 ---
 
 ### - Resultados esperados
 Painel de chamada com os pacientes organizados por prioridade: emergências, preferenciais e comuns.  
-[🔗 Imagem](https://imgur.com/JXKKO2u)
+![Painel de Chamada](https://i.imgur.com/JXKKO2u.png)
 
 ---
 
