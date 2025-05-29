@@ -106,7 +106,7 @@ http://localhost:5000
 
 ### - Tela inicial
 A imagem exibe a interface principal de cadastro do paciente no totem, onde o usuário insere suas informações antes da triagem hospitalar.  
-[🔗 Imagem](https://imgur.com/mt1QnFe)
+![Interface de Cadastro do Paciente](https://i.imgur.com/mt1QnFe.png)
 
 ---
 
